@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.can.CANTimeoutException;
 
 /**
@@ -39,6 +40,7 @@ public class Robot2014 extends IterativeRobot {
     Compressor compressor;
     Solenoid extend;
     Solenoid retract;
+    Victor launch;
     
     /**
      * This function is run when the robot is first started up and should be
@@ -66,8 +68,8 @@ public class Robot2014 extends IterativeRobot {
             shoot2 = new CANJaguar(6);
             
             // Make them both use voltage
-            shoot1.changeControlMode(CANJaguar.ControlMode.kVoltage);
-            shoot2.changeControlMode(CANJaguar.ControlMode.kVoltage);
+            //shoot1.changeControlMode(CANJaguar.ControlMode.kVoltage);
+            //shoot2.changeControlMode(CANJaguar.ControlMode.kVoltage);
             
         } catch (CANTimeoutException ex) {
             ex.printStackTrace();
@@ -84,6 +86,9 @@ public class Robot2014 extends IterativeRobot {
         joy1 = new Joystick(1);
         joy2 = new Joystick(2);
         
+        // Set the launch
+        launch = new Victor(2);
+        
     }
 
     /**
@@ -99,7 +104,7 @@ public class Robot2014 extends IterativeRobot {
             
             // Make sure pistons are off
             extend.set(false);
-            retract.set(false);
+            retract.set(true);
             
             // Use percentage in this mode
             frontLeft.changeControlMode(CANJaguar.ControlMode.kPercentVbus);
@@ -140,13 +145,8 @@ public class Robot2014 extends IterativeRobot {
         try {
             
             // Run shoot wheel at full power if button pressed
-            if (joy2.getRawButton(1)) {
-                shoot1.setX(10);
-                shoot2.setX(10);
-            } else {
-                shoot1.setX(0);
-                shoot2.setX(0);
-            }            
+            shoot1.setX(joy2.getRawAxis(3) * -1);
+            shoot2.setX(joy2.getRawAxis(3) * -1);
             
         } catch (CANTimeoutException ex) {
             ex.printStackTrace();
@@ -156,15 +156,15 @@ public class Robot2014 extends IterativeRobot {
         double cutoff = .6;
         // If value past cutoff change appropriatly
         if (joy2.getRawAxis(2) >= cutoff) {
-            extend.set(true);
-            retract.set(false);
-        } else if (joy2.getRawAxis(2) <= -cutoff) {
             extend.set(false);
             retract.set(true);
-        } else {
-            extend.set(false);
+        } else if (joy2.getRawAxis(2) <= -cutoff) {
+            extend.set(true);
             retract.set(false);
         }
+        
+        // If trigger buttons press, fire
+        launch.set(joy2.getRawAxis(4));
         
     }
     
@@ -177,7 +177,7 @@ public class Robot2014 extends IterativeRobot {
         compressor.start();
         
         // Catch annoying CAN errors
-        try {
+        /*try {
             
             // Start the motors first so they ramp up
             shoot1.setX(10);
@@ -205,8 +205,8 @@ public class Robot2014 extends IterativeRobot {
             rearRight.setX(0);
             
             // Pull wheels back to shoot
-            retract.set(true);
-            extend.set(false);
+            //retract.set(true);
+            //extend.set(false);
             
             // Wait to fully shoot
             Timer.delay(3);
@@ -228,7 +228,7 @@ public class Robot2014 extends IterativeRobot {
             
         } catch (CANTimeoutException ex) {
             ex.printStackTrace();
-        }
+        }*/
         
     }
     
@@ -242,9 +242,9 @@ public class Robot2014 extends IterativeRobot {
             // Stop the compressor when the match end
             compressor.stop();
 
-            // Make sure pistons are off
+            // Make sure pistons are off and wide open
             extend.set(false);
-            retract.set(false);
+            retract.set(true);
         
         } catch (NullPointerException e) {
             // Catch annoying bug
